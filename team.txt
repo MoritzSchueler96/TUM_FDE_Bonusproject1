@@ -1,4 +1,4 @@
-Teamname:YourNameHere
-Realname:YourNameHere
-MatrNr: YourMatrikelNrHere
+Teamname:Suspicious Chinchilla
+Realname:Moritz Schüler
+MatrNr: 03721689
 Category:Student
