@@ -20,9 +20,9 @@ class JoinQuery
    JoinQuery(std::string lineitem, std::string orders, std::string customer);
 
    /**************************************************************************
-    *  Computes avg(l_quantity) for the following query.
+    *  Computes avg(l_quantity)*100 for the following query.
     *
-    *  select avg(l_quantity)
+    *  select avg(l_quantity)*100
     *  from lineitem, orders, customer
     *  where
     *   l_orderkey = o_orderkey and
@@ -30,16 +30,15 @@ class JoinQuery
     *   c_mktsegment = <segmentParam>
     *
     *  where the tables lineitem, orders and customer are those identified by
-    *the paths given in the constructor.
+    *  the paths given in the constructor.
     *
     *  Parameters:
     *     segmentParam: string to use instead of <segmentParam> in query
     *
     *  Returns: avg(l_quantity) * 100
-    *     In the data files, l_quantity is of fixed point type with
-    *     two digits right of the point. Thus avg(l_quantity) shouls
-    *     also have two digits right of the point. Therefore
-    *     avg(l_quantity) * 100 is the same with the point dropped.
+    *     In the data files, l_quantity is of type integer.
+    *     Therefore you should return avg(l_quantity) * 100
+    *     as integer (more specific C++ type: size_t) as well.
     ************************************************************************/
    size_t avg(std::string segmentParam);
    /// Returns line count of given file
