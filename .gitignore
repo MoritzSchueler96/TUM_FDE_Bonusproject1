@@ -3,6 +3,4 @@ build/
 compile_commands.json
 .idea
 /cmake-build-*
-*.tbl
-.vscode
-data/
+.vscode/
