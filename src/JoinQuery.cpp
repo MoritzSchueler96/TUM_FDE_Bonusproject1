@@ -186,21 +186,15 @@ void JoinQuery::getLineMap(const char *file, unordered_multimap<int, int> &map)
 size_t JoinQuery::avg(std::string segmentParam)
 {
    unordered_set<int> customer_ids;
-   const char *c_file =
-       "/home/user/Documents/Github/Uni/Master/TUM_FDE/projects/p01/"
-       "fde20-bonusproject-1/test/data/tpch/sf0_001/customer.tbl";
+   const char *c_file = &(this->customer[0]);
    getCustomerIds(c_file, segmentParam, customer_ids);
 
    unordered_map<int, int> orders_map;
-   const char *o_file =
-       "/home/user/Documents/Github/Uni/Master/TUM_FDE/projects/p01/"
-       "fde20-bonusproject-1/test/data/tpch/sf0_001/orders.tbl";
+   const char *o_file = &(this->orders[0]);
    getOrderMap(o_file, orders_map);
 
    unordered_multimap<int, int> lineitem_map;
-   const char *l_file =
-       "/home/user/Documents/Github/Uni/Master/TUM_FDE/projects/p01/"
-       "fde20-bonusproject-1/test/data/tpch/sf0_001/lineitem.tbl";
+   const char *l_file = &(this->lineitem[0]);
    getLineMap(l_file, lineitem_map);
 
    unordered_set<int> matches;
