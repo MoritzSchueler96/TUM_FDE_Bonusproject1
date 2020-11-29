@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <sys/mman.h>
 #include <boost/algorithm/string.hpp>
+#include <charconv>
 #include <fstream>
 #include <iostream>
 #include <numeric>
@@ -79,38 +80,46 @@ size_t JoinQuery::lineCount(std::string rel)
 }
 //---------------------------------------------------------------------------
 
+int parseInt(const char *last, const char *c, int &v)
+{
+   while (last < c) {
+      char f = *(last++);
+      if ((f >= '0') && (f <= '9')) {
+         v = 10 * v + f - '0';
+      } else {
+         break;
+      }
+   }
+   return v;
+}
+
 void JoinQuery::getCustomerIds(string file, string segmentParam,
                                unordered_set<int> &ids)
 {
    ifstream in(file);
    string line;
    bool init;
-   unsigned cust_id = 0;
+   int cust_id;
    while (getline(in, line)) {
-      const char *iter = nullptr;
+      const char *last = nullptr;
       unsigned col = 0;
       init = 0;
       for (char &c : line) {
          if (!init) {
-            iter = (&c);
+            last = (&c);
             init = 1;
          }
          if (c == '|') {
             ++col;
             if (col == 1) {
-               while (iter < &c) {
-                  char f = *(iter++);
-                  if ((f >= '0') && (f <= '9')) {
-                     cust_id = 10 * cust_id + f - '0';
-                  }
-               }
+               from_chars(last, &c, cust_id);
                // cout << "cust_id:" << cust_id << endl;
             }
             if (col == 6) {
-               iter = (&c);
+               last = (&c) + 1;
             } else if (col == 7) {
-               int size = (&c) - iter + 1;
-               string mkt(iter + 1, size);
+               int size = (&c) - last;
+               string mkt(last, size);
                if (mkt == segmentParam) ids.insert(cust_id);
                // cout << "mkt:" << mkt << endl;
                // cout << "seg:" << segmentParam << endl;
@@ -126,33 +135,25 @@ void JoinQuery::getOrderMap(string file, unordered_map<int, int> &map)
    ifstream in(file);
    string line;
    bool init;
-   unsigned order_id;
+   int order_id;
    while (getline(in, line)) {
-      const char *iter = nullptr;
+      const char *last = nullptr;
       unsigned col = 0;
       init = 0;
       for (char &c : line) {
          if (!init) {
-            iter = (&c);
+            last = (&c);
             init = 1;
          }
          if (c == '|') {
             ++col;
             if (col == 1) {
-               while (iter < &c) {
-                  char f = *(iter++);
-                  if ((f >= '0') && (f <= '9')) {
-                     order_id = 10 * order_id + f - '0';
-                  }
-               }
-               iter = (&c);
+               from_chars(last, &c, order_id);
+               last = (&c) + 1;
                // cout << "order_id:" << order_id << endl;
             } else if (col == 2) {
-               unsigned v;
-               while (iter < &c) {
-                  char f = *(iter++);
-                  if ((f >= '0') && (f <= '9')) { v = 10 * v + f - '0'; }
-               }
+               int v;
+               from_chars(last, &c, v);
                map[order_id] = v;
                // cout << "v:" << v << endl;
                break;
@@ -167,35 +168,27 @@ void JoinQuery::getLineMap(string file, unordered_multimap<int, int> &map)
    ifstream in(file);
    string line;
    bool init;
-   unsigned order_id;
+   int order_id;
    while (getline(in, line)) {
-      const char *iter = nullptr;
+      const char *last = nullptr;
       unsigned col = 0;
       init = 0;
       for (char &c : line) {
          if (!init) {
-            iter = (&c);
+            last = (&c);
             init = 1;
          }
          if (c == '|') {
             ++col;
             if (col == 1) {
-               while (iter < &c) {
-                  char f = *(iter++);
-                  if ((f >= '0') && (f <= '9')) {
-                     order_id = 10 * order_id + f - '0';
-                  }
-               }
+               from_chars(last, &c, order_id);
                // cout << "order_id:" << order_id << endl;
             }
             if (col == 4) {
-               iter = (&c);
+               last = (&c) + 1;
             } else if (col == 5) {
-               unsigned v;
-               while (iter < &c) {
-                  char f = *(iter++);
-                  if ((f >= '0') && (f <= '9')) { v = 10 * v + f - '0'; }
-               }
+               int v;
+               from_chars(last, &c, v);
                map.insert({order_id, v});
                // cout << "v:" << v << endl;
                break;

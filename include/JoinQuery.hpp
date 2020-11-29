@@ -60,5 +60,6 @@ class JoinQuery
                        unordered_set<int> &ids);
    void getOrderMap(string file, unordered_map<int, int> &map);
    void getLineMap(string file, unordered_multimap<int, int> &map);
+   int parseInt(const char *last, const char *c, int &v);
 };
 //---------------------------------------------------------------------------
