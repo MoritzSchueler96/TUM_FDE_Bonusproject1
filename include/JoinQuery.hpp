@@ -1,10 +1,17 @@
 #include <string>
+#include <unordered_map>
 
+using namespace std;
 //---------------------------------------------------------------------------
 class JoinQuery
 /// Class which provides answers to queries on lineitem orders and customer
 {
    public:
+   string lineitem;
+   string orders;
+   string customer;
+   unordered_map<string, int> map;
+
    /**************************************************************************
     *  The constructor receives paths to data from the TPC-H benchmark.
     *  You can explore an example dataset from this benchmark on
@@ -39,6 +46,11 @@ class JoinQuery
     *     In the data files, l_quantity is of type integer.
     *     Therefore you should return avg(l_quantity) * 100
     *     as integer (more specific C++ type: size_t) as well.
+    *
+    *
+    * average of quantity of lineitem but only a subset
+    *
+    *
     ************************************************************************/
    size_t avg(std::string segmentParam);
    /// Returns line count of given file
