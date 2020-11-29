@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <sys/mman.h>
 #include <boost/algorithm/string.hpp>
-#include <charconv>
 #include <fstream>
 #include <iostream>
 #include <numeric>
@@ -80,17 +79,17 @@ size_t JoinQuery::lineCount(std::string rel)
 }
 //---------------------------------------------------------------------------
 
-int parseInt(const char *last, const char *c, int &v)
+void JoinQuery::parseInt(const char *first, const char *end, int &v)
 {
-   while (last < c) {
-      char f = *(last++);
+   v = 0;
+   while (first < end) {
+      char f = *(first++);
       if ((f >= '0') && (f <= '9')) {
          v = 10 * v + f - '0';
       } else {
          break;
       }
    }
-   return v;
 }
 
 void JoinQuery::getCustomerIds(string file, string segmentParam,
@@ -111,10 +110,7 @@ void JoinQuery::getCustomerIds(string file, string segmentParam,
          }
          if (c == '|') {
             ++col;
-            if (col == 1) {
-               from_chars(last, &c, cust_id);
-               // cout << "cust_id:" << cust_id << endl;
-            }
+            if (col == 1) { parseInt(last, &c, cust_id); }
             if (col == 6) {
                last = (&c) + 1;
             } else if (col == 7) {
@@ -148,12 +144,14 @@ void JoinQuery::getOrderMap(string file, unordered_map<int, int> &map)
          if (c == '|') {
             ++col;
             if (col == 1) {
-               from_chars(last, &c, order_id);
+               // from_chars(last, &c, order_id);
+               parseInt(last, &c, order_id);
                last = (&c) + 1;
                // cout << "order_id:" << order_id << endl;
             } else if (col == 2) {
                int v;
-               from_chars(last, &c, v);
+               // from_chars(last, &c, v);
+               parseInt(last, &c, v);
                map[order_id] = v;
                // cout << "v:" << v << endl;
                break;
@@ -181,14 +179,16 @@ void JoinQuery::getLineMap(string file, unordered_multimap<int, int> &map)
          if (c == '|') {
             ++col;
             if (col == 1) {
-               from_chars(last, &c, order_id);
+               // from_chars(last, &c, order_id);
+               parseInt(last, &c, order_id);
                // cout << "order_id:" << order_id << endl;
             }
             if (col == 4) {
                last = (&c) + 1;
             } else if (col == 5) {
                int v;
-               from_chars(last, &c, v);
+               // from_chars(last, &c, v);
+               parseInt(last, &c, v);
                map.insert({order_id, v});
                // cout << "v:" << v << endl;
                break;
