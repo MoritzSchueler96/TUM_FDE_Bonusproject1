@@ -1,5 +1,6 @@
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 using namespace std;
 //---------------------------------------------------------------------------
@@ -10,7 +11,6 @@ class JoinQuery
    string lineitem;
    string orders;
    string customer;
-   unordered_map<string, int> map;
 
    /**************************************************************************
     *  The constructor receives paths to data from the TPC-H benchmark.
@@ -55,5 +55,9 @@ class JoinQuery
    size_t avg(std::string segmentParam);
    /// Returns line count of given file
    size_t lineCount(std::string rel);
+
+   unordered_set<int> getCustomerIds(string file, string segmentParam);
+   unordered_map<int, int> getOrderMap(string file);
+   unordered_multimap<int, int> getLineMap(string file);
 };
 //---------------------------------------------------------------------------
