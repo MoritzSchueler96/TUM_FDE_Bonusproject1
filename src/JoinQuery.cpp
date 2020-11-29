@@ -87,13 +87,11 @@ void JoinQuery::getCustomerIds(string file, string segmentParam,
    bool init;
    unsigned cust_id = 0;
    while (getline(in, line)) {
-      const char *last = nullptr;
       const char *iter = nullptr;
       unsigned col = 0;
       init = 0;
       for (char &c : line) {
          if (!init) {
-            last = (&c);
             iter = (&c);
             init = 1;
          }
@@ -106,15 +104,13 @@ void JoinQuery::getCustomerIds(string file, string segmentParam,
                      cust_id = 10 * cust_id + f - '0';
                   }
                }
-               // from_chars(last, &c, cust_id);
                // cout << "cust_id:" << cust_id << endl;
             }
             if (col == 6) {
-               last = (&c) + 1;
                iter = (&c);
             } else if (col == 7) {
-               int size = (&c) - last;
-               string mkt(last, size);
+               int size = (&c) - iter + 1;
+               string mkt(iter + 1, size);
                if (mkt == segmentParam) ids.insert(cust_id);
                // cout << "mkt:" << mkt << endl;
                // cout << "seg:" << segmentParam << endl;
@@ -130,15 +126,13 @@ void JoinQuery::getOrderMap(string file, unordered_map<int, int> &map)
    ifstream in(file);
    string line;
    bool init;
-   int order_id;
+   unsigned order_id;
    while (getline(in, line)) {
-      const char *last = nullptr;
       const char *iter = nullptr;
       unsigned col = 0;
       init = 0;
       for (char &c : line) {
          if (!init) {
-            last = (&c);
             iter = (&c);
             init = 1;
          }
@@ -151,8 +145,6 @@ void JoinQuery::getOrderMap(string file, unordered_map<int, int> &map)
                      order_id = 10 * order_id + f - '0';
                   }
                }
-               // from_chars(last, &c, order_id);
-               last = (&c) + 1;
                iter = (&c);
                // cout << "order_id:" << order_id << endl;
             } else if (col == 2) {
@@ -161,7 +153,6 @@ void JoinQuery::getOrderMap(string file, unordered_map<int, int> &map)
                   char f = *(iter++);
                   if ((f >= '0') && (f <= '9')) { v = 10 * v + f - '0'; }
                }
-               // from_chars(last, &c, v);
                map[order_id] = v;
                // cout << "v:" << v << endl;
                break;
@@ -176,15 +167,13 @@ void JoinQuery::getLineMap(string file, unordered_multimap<int, int> &map)
    ifstream in(file);
    string line;
    bool init;
-   int order_id;
+   unsigned order_id;
    while (getline(in, line)) {
-      const char *last = nullptr;
       const char *iter = nullptr;
       unsigned col = 0;
       init = 0;
       for (char &c : line) {
          if (!init) {
-            last = (&c);
             iter = (&c);
             init = 1;
          }
@@ -197,11 +186,9 @@ void JoinQuery::getLineMap(string file, unordered_multimap<int, int> &map)
                      order_id = 10 * order_id + f - '0';
                   }
                }
-               // from_chars(last, &c, order_id);
                // cout << "order_id:" << order_id << endl;
             }
             if (col == 4) {
-               last = (&c) + 1;
                iter = (&c);
             } else if (col == 5) {
                unsigned v;
@@ -209,7 +196,6 @@ void JoinQuery::getLineMap(string file, unordered_multimap<int, int> &map)
                   char f = *(iter++);
                   if ((f >= '0') && (f <= '9')) { v = 10 * v + f - '0'; }
                }
-               // from_chars(last, &c, v);
                map.insert({order_id, v});
                // cout << "v:" << v << endl;
                break;
