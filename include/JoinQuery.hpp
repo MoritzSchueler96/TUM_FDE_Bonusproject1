@@ -56,10 +56,10 @@ class JoinQuery
    /// Returns line count of given file
    size_t lineCount(std::string rel);
 
-   void getCustomerIds(string file, string segmentParam,
+   void getCustomerIds(const char *file, string segmentParam,
                        unordered_set<int> &ids);
-   void getOrderMap(string file, unordered_map<int, int> &map);
-   void getLineMap(string file, unordered_multimap<int, int> &map);
-   void parseInt(const char *first, const char *end, int &v);
+
+   void getOrderMap(const char *file, unordered_map<int, int> &map);
+   void getLineMap(const char *file, unordered_multimap<int, int> &map);
 };
 //---------------------------------------------------------------------------

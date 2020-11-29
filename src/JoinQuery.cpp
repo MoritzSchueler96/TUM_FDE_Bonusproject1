@@ -1,10 +1,14 @@
 #include "JoinQuery.hpp"
 #include <assert.h>
+#include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <iostream>
 #include <numeric>
+#include <string>
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
@@ -12,37 +16,192 @@
 using namespace std;
 
 //---------------------------------------------------------------------------
-JoinQuery::JoinQuery(std::string lineitem, std::string orders,
-                     std::string customer)
+JoinQuery::JoinQuery(string lineitem, string orders, string customer)
 {
    this->lineitem = lineitem;
    this->orders = orders;
    this->customer = customer;
 }
+
+// Source code below is taken from the sixth lecture in Foundations in data
+// engineering at TUM
+constexpr uint64_t buildPattern(char c)
+{
+   // Convert 00000000000000CC -> CCCCCCCCCCCCCCCC
+   uint64_t v = c;
+   return (v << 56 | v << 48 | v << 40 | v << 32 | v << 24 | v << 16 | v << 8) |
+          v;
+}
+
+template <char separator>
+static const char *findPattern(const char *iter, const char *end)
+// Returns the position after the pattern within [iter, end[, or end if not
+// found
+{
+   // Loop over the content in blocks of 8 characters
+   auto end8 = end - 8;
+   constexpr uint64_t pattern = buildPattern(separator);
+   for (; iter < end8; iter += 8) {
+      // Check the next 8 characters for the pattern
+      uint64_t block = *reinterpret_cast<const uint64_t *>(iter);
+      constexpr uint64_t high = 0x8080808080808080ull;
+      constexpr uint64_t low = ~high;
+      uint64_t lowChars = (~block) & high;
+      uint64_t foundPattern = ~((((block & low) ^ pattern) + low) & high);
+      uint64_t matches = foundPattern & lowChars;
+      if (matches) return iter + (__builtin_ctzll(matches) >> 3) + 1;
+   }
+
+   // Check the last few characters explicitly
+   while ((iter < end) && ((*iter) != separator)) ++iter;
+   if (iter < end) ++iter;
+   return iter;
+}
+
+template <char separator>
+static const char *findNthPattern(const char *iter, const char *end, unsigned n)
+// Returns the position after the pattern within [iter, end[, or end if not
+// found
+{
+   // Loop over the content in blocks of 8 characters
+   auto end8 = end - 8;
+   constexpr uint64_t pattern = buildPattern(separator);
+   for (; iter < end8; iter += 8) {
+      // Check the next 8 characters for the pattern
+      uint64_t block = *reinterpret_cast<const uint64_t *>(iter);
+      constexpr uint64_t high = 0x8080808080808080ull;
+      constexpr uint64_t low = ~high;
+      uint64_t lowChars = (~block) & high;
+      uint64_t foundPattern = ~((((block & low) ^ pattern) + low) & high);
+      uint64_t matches = foundPattern & lowChars;
+      if (matches) {
+         unsigned hits = __builtin_popcountll(
+             matches);  // gives number of bits that are set
+         if (hits >= n) {
+            for (; n > 1; n--)
+               matches &= matches - 1;  // clears the last bit that is one
+            return iter + (__builtin_ctzll(matches) >> 3) + 1;
+         }
+         n -= hits;
+      }
+   }
+
+   // Check the last few characters explicitly
+   for (; iter < end; ++iter)
+      if ((*iter) == separator)
+         if ((--n) == 0) return iter + 1;
+
+   return end;
+}
+
+void parseInt(const char *first, const char *end, int &v)
+{
+   v = 0;
+   while (first < end) {
+      char f = *(first++);
+      if ((f >= '0') && (f <= '9')) {
+         v = 10 * v + f - '0';
+      } else {
+         break;
+      }
+   }
+}
+
+void JoinQuery::getCustomerIds(const char *file, string segmentParam,
+                               unordered_set<int> &ids)
+{
+   int handle = open(file, O_RDONLY);
+   lseek(handle, 0, SEEK_END);
+   auto length = lseek(handle, 0, SEEK_CUR);
+   void *data = mmap(nullptr, length, PROT_READ, MAP_SHARED, handle, 0);
+   auto begin = static_cast<const char *>(data), end = begin + length;
+
+   for (auto iter = begin; iter < end;) {
+      auto last = findPattern<'|'>(iter, end);
+      int cust_id = 0;
+      parseInt(iter, last - 1, cust_id);
+
+      last = findNthPattern<'|'>(iter, end, 6);
+      iter = last;
+      last = findPattern<'|'>(iter, end);
+      int size = last - iter - 1;
+      string mkt(iter, size);
+      if (mkt == segmentParam) ids.insert(cust_id);
+      iter = findPattern<'\n'>(iter, end);
+   }
+
+   munmap(data, length);
+   close(handle);
+}
+
+void JoinQuery::getOrderMap(const char *file, unordered_map<int, int> &map)
+{
+   int handle = open(file, O_RDONLY);
+   lseek(handle, 0, SEEK_END);
+   auto length = lseek(handle, 0, SEEK_CUR);
+   void *data = mmap(nullptr, length, PROT_READ, MAP_SHARED, handle, 0);
+   auto begin = static_cast<const char *>(data), end = begin + length;
+
+   for (auto iter = begin; iter < end;) {
+      auto last = findPattern<'|'>(iter, end);
+      int order_id = 0;
+      parseInt(iter, last - 1, order_id);
+      iter = last;
+      last = findPattern<'|'>(iter, end);
+      int v = 0;
+      parseInt(iter, last - 1, v);
+      map[order_id] = v;
+      iter = findPattern<'\n'>(iter, end);
+   }
+
+   munmap(data, length);
+   close(handle);
+}
+
+void JoinQuery::getLineMap(const char *file, unordered_multimap<int, int> &map)
+{
+   int handle = open(file, O_RDONLY);
+   lseek(handle, 0, SEEK_END);
+   auto length = lseek(handle, 0, SEEK_CUR);
+   void *data = mmap(nullptr, length, PROT_READ, MAP_SHARED, handle, 0);
+   auto begin = static_cast<const char *>(data), end = begin + length;
+
+   for (auto iter = begin; iter < end;) {
+      auto last = findPattern<'|'>(iter, end);
+      int order_id = 0;
+      parseInt(iter, last - 1, order_id);
+
+      iter = findNthPattern<'|'>(iter, end, 4);
+      last = findPattern<'|'>(iter, end);
+      int v = 0;
+      parseInt(iter, last - 1, v);
+      map.insert({order_id, v});
+      iter = findPattern<'\n'>(iter, end);
+   }
+   munmap(data, length);
+   close(handle);
+}
+
 //---------------------------------------------------------------------------
 size_t JoinQuery::avg(std::string segmentParam)
 {
-   /*
-   // get needed columns as hashmaps
-   customer_map = read(this->customer);
-   orders_map = read(this->orders);
-   lineitem_map = read(this->lineitem);
-
-   // delete non matching entries
-   deleteNonMatching(customer_map, segmentParam);
-   deleteNonMatching(orders_map, customer_map);
-   deleteNonMatching(lineitem_map, orders_map);
-
-   // calc average and return
-   return averageOfMapField(lineitem_map, 'quantity'); // sum / linecount
-   */
-
    unordered_set<int> customer_ids;
-   getCustomerIds(this->customer, segmentParam, customer_ids);
+   const char *c_file =
+       "/home/user/Documents/Github/Uni/Master/TUM_FDE/projects/p01/"
+       "fde20-bonusproject-1/test/data/tpch/sf0_001/customer.tbl";
+   getCustomerIds(c_file, segmentParam, customer_ids);
+
    unordered_map<int, int> orders_map;
-   getOrderMap(this->orders, orders_map);
+   const char *o_file =
+       "/home/user/Documents/Github/Uni/Master/TUM_FDE/projects/p01/"
+       "fde20-bonusproject-1/test/data/tpch/sf0_001/orders.tbl";
+   getOrderMap(o_file, orders_map);
+
    unordered_multimap<int, int> lineitem_map;
-   getLineMap(this->lineitem, lineitem_map);
+   const char *l_file =
+       "/home/user/Documents/Github/Uni/Master/TUM_FDE/projects/p01/"
+       "fde20-bonusproject-1/test/data/tpch/sf0_001/lineitem.tbl";
+   getLineMap(l_file, lineitem_map);
 
    unordered_set<int> matches;
    for (auto p : orders_map) {
@@ -78,167 +237,3 @@ size_t JoinQuery::lineCount(std::string rel)
    return n;
 }
 //---------------------------------------------------------------------------
-
-void JoinQuery::parseInt(const char *first, const char *end, int &v)
-{
-   v = 0;
-   while (first < end) {
-      char f = *(first++);
-      if ((f >= '0') && (f <= '9')) {
-         v = 10 * v + f - '0';
-      } else {
-         break;
-      }
-   }
-}
-
-void JoinQuery::getCustomerIds(string file, string segmentParam,
-                               unordered_set<int> &ids)
-{
-   ifstream in(file);
-   string line;
-   bool init;
-   int cust_id;
-   while (getline(in, line)) {
-      const char *last = nullptr;
-      unsigned col = 0;
-      init = 0;
-      for (char &c : line) {
-         if (!init) {
-            last = (&c);
-            init = 1;
-         }
-         if (c == '|') {
-            ++col;
-            if (col == 1) { parseInt(last, &c, cust_id); }
-            if (col == 6) {
-               last = (&c) + 1;
-            } else if (col == 7) {
-               int size = (&c) - last;
-               string mkt(last, size);
-               if (mkt == segmentParam) ids.insert(cust_id);
-               // cout << "mkt:" << mkt << endl;
-               // cout << "seg:" << segmentParam << endl;
-               break;
-            }
-         }
-      }
-   }
-}
-
-void JoinQuery::getOrderMap(string file, unordered_map<int, int> &map)
-{
-   ifstream in(file);
-   string line;
-   bool init;
-   int order_id;
-   while (getline(in, line)) {
-      const char *last = nullptr;
-      unsigned col = 0;
-      init = 0;
-      for (char &c : line) {
-         if (!init) {
-            last = (&c);
-            init = 1;
-         }
-         if (c == '|') {
-            ++col;
-            if (col == 1) {
-               // from_chars(last, &c, order_id);
-               parseInt(last, &c, order_id);
-               last = (&c) + 1;
-               // cout << "order_id:" << order_id << endl;
-            } else if (col == 2) {
-               int v;
-               // from_chars(last, &c, v);
-               parseInt(last, &c, v);
-               map[order_id] = v;
-               // cout << "v:" << v << endl;
-               break;
-            }
-         }
-      }
-   }
-}
-
-void JoinQuery::getLineMap(string file, unordered_multimap<int, int> &map)
-{
-   ifstream in(file);
-   string line;
-   bool init;
-   int order_id;
-   while (getline(in, line)) {
-      const char *last = nullptr;
-      unsigned col = 0;
-      init = 0;
-      for (char &c : line) {
-         if (!init) {
-            last = (&c);
-            init = 1;
-         }
-         if (c == '|') {
-            ++col;
-            if (col == 1) {
-               // from_chars(last, &c, order_id);
-               parseInt(last, &c, order_id);
-               // cout << "order_id:" << order_id << endl;
-            }
-            if (col == 4) {
-               last = (&c) + 1;
-            } else if (col == 5) {
-               int v;
-               // from_chars(last, &c, v);
-               parseInt(last, &c, v);
-               map.insert({order_id, v});
-               // cout << "v:" << v << endl;
-               break;
-            }
-         }
-      }
-   }
-}
-
-/*
-void JoinQuery::getCustomerIds(string file, string segmentParam,
-                               unordered_set<int> &ids)
-{
-   int handle = open(file, O_RDONLY);
-   auto size = lseek(handle, 0, SEEK_END) + 7;
-   auto data = mmap(nullptr, size, PROT_READ, MAP_SHARED, handle, 0);
-
-   ifstream in(file);
-   string line;
-   bool init;
-   int cust_id;
-   while (getline(in, line)) {
-      const char *last = nullptr;
-      unsigned col = 0;
-      init = 0;
-      for (char &c : line) {
-         if (!init) {
-            last = (&c);
-            init = 1;
-         }
-         if (c == '|') {
-            ++col;
-            if (col == 1) {
-               from_chars(last, &c, cust_id);
-               // cout << "cust_id:" << cust_id << endl;
-            }
-            if (col == 6) {
-               last = (&c) + 1;
-            } else if (col == 7) {
-               int size = (&c) - last;
-               string mkt(last, size);
-               if (mkt == segmentParam) ids.insert(cust_id);
-               // cout << "mkt:" << mkt << endl;
-               // cout << "seg:" << segmentParam << endl;
-               break;
-            }
-         }
-      }
-   }
-   munmap(data, size);
-   close(handle);
-}
-*/
