@@ -18,9 +18,9 @@ using namespace std;
 //---------------------------------------------------------------------------
 JoinQuery::JoinQuery(string lineitem, string orders, string customer)
 {
-   this->lineitem = lineitem;
-   this->orders = orders;
-   this->customer = customer;
+   getCustomerIds(&(customer[0]), this->customer_ids);
+   getOrderMap(&(orders[0]), this->orders_map);
+   getLineMap(&(lineitem[0]), this->lineitem_map);
 }
 
 // Source code below is taken from the sixth lecture in Foundations in data
@@ -33,6 +33,8 @@ constexpr uint64_t buildPattern(char c)
           v;
 }
 
+// Source code below is taken from the sixth lecture in Foundations in data
+// engineering at TUM
 template <char separator>
 static const char *findPattern(const char *iter, const char *end)
 // Returns the position after the pattern within [iter, end[, or end if not
@@ -58,6 +60,8 @@ static const char *findPattern(const char *iter, const char *end)
    return iter;
 }
 
+// Source code below is taken from the sixth lecture in Foundations in data
+// engineering at TUM
 template <char separator>
 static const char *findNthPattern(const char *iter, const char *end, unsigned n)
 // Returns the position after the pattern within [iter, end[, or end if not
@@ -94,6 +98,7 @@ static const char *findNthPattern(const char *iter, const char *end, unsigned n)
    return end;
 }
 
+// wrapped code from lecture into its own function
 void parseInt(const char *first, const char *end, int &v)
 {
    v = 0;
@@ -107,8 +112,9 @@ void parseInt(const char *first, const char *end, int &v)
    }
 }
 
-void JoinQuery::getCustomerIds(const char *file, string segmentParam,
-                               unordered_set<int> &ids)
+// content partly taken from the lecture
+void JoinQuery::getCustomerIds(const char *file,
+                               unordered_map<int, string> &ids)
 {
    int handle = open(file, O_RDONLY);
    lseek(handle, 0, SEEK_END);
@@ -126,7 +132,7 @@ void JoinQuery::getCustomerIds(const char *file, string segmentParam,
       last = findPattern<'|'>(iter, end);
       int size = last - iter - 1;
       string mkt(iter, size);
-      if (mkt == segmentParam) ids.insert(cust_id);
+      ids[cust_id] = mkt;
       iter = findPattern<'\n'>(iter, end);
    }
 
@@ -134,6 +140,7 @@ void JoinQuery::getCustomerIds(const char *file, string segmentParam,
    close(handle);
 }
 
+// content partly taken from the lecture
 void JoinQuery::getOrderMap(const char *file, unordered_map<int, int> &map)
 {
    int handle = open(file, O_RDONLY);
@@ -158,6 +165,7 @@ void JoinQuery::getOrderMap(const char *file, unordered_map<int, int> &map)
    close(handle);
 }
 
+// content partly taken from the lecture
 void JoinQuery::getLineMap(const char *file, unordered_multimap<int, int> &map)
 {
    int handle = open(file, O_RDONLY);
@@ -185,31 +193,27 @@ void JoinQuery::getLineMap(const char *file, unordered_multimap<int, int> &map)
 //---------------------------------------------------------------------------
 size_t JoinQuery::avg(std::string segmentParam)
 {
-   unordered_set<int> customer_ids;
-   const char *c_file = &(this->customer[0]);
-   getCustomerIds(c_file, segmentParam, customer_ids);
-
-   unordered_map<int, int> orders_map;
-   const char *o_file = &(this->orders[0]);
-   getOrderMap(o_file, orders_map);
-
-   unordered_multimap<int, int> lineitem_map;
-   const char *l_file = &(this->lineitem[0]);
-   getLineMap(l_file, lineitem_map);
-
    unordered_set<int> matches;
-   for (auto p : orders_map) {
-      for (auto q : customer_ids) {
-         if (p.second == q) {
+
+   for (auto q : this->customer_ids) {
+      for (auto p : this->orders_map) {
+         if (p.second == q.first && q.second == segmentParam) {
             matches.insert(p.first);
-            break;
+            // break;
          }
       }
    }
 
+   /*
+   TODO: improve this!
+   Ideas: - only iterate over shorter map/set
+          - use vector instead of unordered set -> sorted and
+   std::set_intersection function
+*/
+
    unsigned sum = 0;
    unsigned count = 0;
-   for (auto p : lineitem_map) {
+   for (auto p : this->lineitem_map) {
       for (auto q : matches) {
          if (p.first == q) {
             sum += p.second;
@@ -218,6 +222,7 @@ size_t JoinQuery::avg(std::string segmentParam)
          }
       }
    }
+
    size_t avg = sum * 100 / count;
    return avg;
 }

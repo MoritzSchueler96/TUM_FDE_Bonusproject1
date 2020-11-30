@@ -8,9 +8,9 @@ class JoinQuery
 /// Class which provides answers to queries on lineitem orders and customer
 {
    public:
-   string lineitem;
-   string orders;
-   string customer;
+   unordered_multimap<int, int> lineitem_map;
+   unordered_map<int, int> orders_map;
+   unordered_map<int, string> customer_ids;
 
    /**************************************************************************
     *  The constructor receives paths to data from the TPC-H benchmark.
@@ -56,8 +56,7 @@ class JoinQuery
    /// Returns line count of given file
    size_t lineCount(std::string rel);
 
-   void getCustomerIds(const char *file, string segmentParam,
-                       unordered_set<int> &ids);
+   void getCustomerIds(const char *file, unordered_map<int, string> &ids);
 
    void getOrderMap(const char *file, unordered_map<int, int> &map);
    void getLineMap(const char *file, unordered_multimap<int, int> &map);
