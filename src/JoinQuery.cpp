@@ -13,6 +13,7 @@
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 using namespace std;
 
@@ -114,8 +115,7 @@ void parseInt(const char *first, const char *end, int &v)
 }
 
 // content partly taken from the lecture
-void JoinQuery::getCustomerIds(const char *file,
-                               unordered_map<int, string> &ids)
+void JoinQuery::getCustomerIds(const char *file, vector<string> &ids)
 {
    int handle = open(file, O_RDONLY);
    lseek(handle, 0, SEEK_END);
@@ -134,7 +134,8 @@ void JoinQuery::getCustomerIds(const char *file,
       last = findPattern<'|'>(iter, end);
       int size = last - iter - 1;
       string mkt(iter, size);
-      ids[cust_id] = mkt;
+      ids.push_back(mkt);
+      // ids[cust_id] = mkt;
       iter = findPattern<'\n'>(iter, end);
    }
 
@@ -143,7 +144,8 @@ void JoinQuery::getCustomerIds(const char *file,
 }
 
 // content partly taken from the lecture
-void JoinQuery::getOrderMap(const char *file, unordered_map<int, int> &map)
+void JoinQuery::getOrderMap(const char *file,
+                            unordered_map<unsigned, unsigned> &map)
 {
    int handle = open(file, O_RDONLY);
    lseek(handle, 0, SEEK_END);
@@ -168,7 +170,8 @@ void JoinQuery::getOrderMap(const char *file, unordered_map<int, int> &map)
 }
 
 // content partly taken from the lecture
-void JoinQuery::getLineMap(const char *file, unordered_multimap<int, int> &map)
+void JoinQuery::getLineMap(const char *file,
+                           unordered_multimap<unsigned, unsigned> &map)
 {
    int handle = open(file, O_RDONLY);
    lseek(handle, 0, SEEK_END);
@@ -213,11 +216,14 @@ size_t JoinQuery::avg(std::string segmentParam)
 
    unsigned sum = 0;
    unsigned count = 0;
-   for (auto k : this->customer_ids) {
-      if (k.second == segmentParam) {
+   // for (auto k : this->customer_ids) {
+   // if (k.second == segmentParam) {
+   for (unsigned i = 0; i < customer_ids.size(); i++) {
+      if (customer_ids[i] == segmentParam) {
          for (auto q : this->orders_map) {
             // maybe do customer_ids.find instead of for loop
-            if (q.second == k.first) {
+            // if (q.second == k.first) {
+            if (q.second == i + 1) {
                // maybe do lineitem_map.find instead of for loop
                for (auto p : this->lineitem_map) {
                   if (p.first == q.first) {
