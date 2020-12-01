@@ -1,7 +1,5 @@
-#include <set>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 using namespace std;
@@ -12,7 +10,7 @@ class JoinQuery
    public:
    unordered_multimap<unsigned, unsigned> lineitem_map;
    unordered_multimap<unsigned, unsigned> orders_map;
-   unordered_multimap<string, unsigned> customer_map;
+   // unordered_multimap<string, unsigned> customer_map;
    vector<string> customer_mktSegments;
 
    /**************************************************************************
@@ -58,6 +56,7 @@ class JoinQuery
    size_t avg(std::string segmentParam);
    /// Returns line count of given file
    size_t lineCount(std::string rel);
+   size_t avg2(std::string segmentParam);
 
    void getCustomerMap(const char *file,
                        unordered_multimap<string, unsigned> &map);

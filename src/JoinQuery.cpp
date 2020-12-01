@@ -2,17 +2,10 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
 #include <unistd.h>
-#include <boost/algorithm/string.hpp>
 #include <fstream>
-#include <iostream>
-#include <numeric>
-#include <set>
 #include <string>
-#include <thread>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 using namespace std;
@@ -220,8 +213,8 @@ void JoinQuery::getLineMap(const char *file,
 }
 
 //---------------------------------------------------------------------------
-/*
-size_t JoinQuery::avg(std::string segmentParam)
+// slightly slower variant but not prone to missing customer keys
+size_t JoinQuery::avg2(std::string segmentParam)
 {
    unsigned long long int sum = 0;
    unsigned long long int count = 0;
@@ -242,7 +235,8 @@ size_t JoinQuery::avg(std::string segmentParam)
    size_t avg = sum * 100 / count;
    return avg;
 }
-*/
+
+// assumes cust_key is sorted and has no missing values
 size_t JoinQuery::avg(std::string segmentParam)
 {
    unsigned long long int sum = 0;
