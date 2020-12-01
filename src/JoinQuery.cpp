@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <numeric>
+#include <set>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -122,6 +123,7 @@ void JoinQuery::getCustomerIds(const char *file,
    void *data = mmap(nullptr, length, PROT_READ, MAP_SHARED, handle, 0);
    auto begin = static_cast<const char *>(data), end = begin + length;
 
+   // save into ordered vector -> indices of matching condition
    for (auto iter = begin; iter < end;) {
       auto last = findPattern<'|'>(iter, end);
       int cust_id = 0;
@@ -191,10 +193,12 @@ void JoinQuery::getLineMap(const char *file, unordered_multimap<int, int> &map)
 }
 
 //---------------------------------------------------------------------------
+
 size_t JoinQuery::avg(std::string segmentParam)
 {
    unordered_set<int> matches;
-
+   // save indices of customer ids in unordered set? or in another ordered
+   // vector? use indices to get orderkeys
    for (auto q : this->customer_ids) {
       for (auto p : this->orders_map) {
          if (p.second == q.first && q.second == segmentParam) {
@@ -205,10 +209,19 @@ size_t JoinQuery::avg(std::string segmentParam)
    }
 
    /*
+      if (index_customer.find(atoi(custkey.c_str())) != index_customer.end()) {
+         unsigned int value = atoi(orderkey.c_str());
+         index_orders.insert(value);
+      }
+   */
+   cout << matches.size() << endl;
+
+   /*
    TODO: improve this!
    Ideas: - only iterate over shorter map/set
           - use vector instead of unordered set -> sorted and
    std::set_intersection function
+          - use triple loop
 */
 
    unsigned sum = 0;
@@ -226,6 +239,7 @@ size_t JoinQuery::avg(std::string segmentParam)
    size_t avg = sum * 100 / count;
    return avg;
 }
+
 //---------------------------------------------------------------------------
 size_t JoinQuery::lineCount(std::string rel)
 {
