@@ -13,6 +13,7 @@ class JoinQuery
    unordered_multimap<unsigned, unsigned> lineitem_map;
    unordered_multimap<unsigned, unsigned> orders_map;
    unordered_multimap<string, unsigned> customer_map;
+   vector<string> customer_mktSegments;
 
    /**************************************************************************
     *  The constructor receives paths to data from the TPC-H benchmark.
@@ -58,8 +59,10 @@ class JoinQuery
    /// Returns line count of given file
    size_t lineCount(std::string rel);
 
-   void getCustomerIds(const char *file,
+   void getCustomerMap(const char *file,
                        unordered_multimap<string, unsigned> &map);
+
+   void getCustomerMktSegments(const char *file, vector<string> &ids);
 
    void getOrderMap(const char *file,
                     unordered_multimap<unsigned, unsigned> &map);

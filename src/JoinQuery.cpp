@@ -20,7 +20,8 @@ using namespace std;
 //---------------------------------------------------------------------------
 JoinQuery::JoinQuery(string lineitem, string orders, string customer)
 {
-   getCustomerIds(&(customer[0]), this->customer_map);
+   // getCustomerMap(&(customer[0]), this->customer_map);
+   getCustomerMktSegments(&(customer[0]), this->customer_mktSegments);
    getOrderMap(&(orders[0]), this->orders_map);
    getLineMap(&(lineitem[0]), this->lineitem_map);
 }
@@ -116,7 +117,7 @@ void parseInt(const char *first, const char *end, int &v)
 }
 
 // content partly taken from the lecture
-void JoinQuery::getCustomerIds(const char *file,
+void JoinQuery::getCustomerMap(const char *file,
                                unordered_multimap<string, unsigned> &map)
 {
    int handle = open(file, O_RDONLY);
@@ -125,7 +126,6 @@ void JoinQuery::getCustomerIds(const char *file,
    void *data = mmap(nullptr, length, PROT_READ, MAP_SHARED, handle, 0);
    auto begin = static_cast<const char *>(data), end = begin + length;
 
-   // save into ordered vector -> indices of matching condition
    for (auto iter = begin; iter < end;) {
       auto last = findPattern<'|'>(iter, end);
       int cust_id = 0;
@@ -137,6 +137,29 @@ void JoinQuery::getCustomerIds(const char *file,
       int size = last - iter - 1;
       string mkt(iter, size);
       map.insert({mkt, cust_id});
+      iter = findPattern<'\n'>(iter, end);
+   }
+
+   munmap(data, length);
+   close(handle);
+}
+
+void JoinQuery::getCustomerMktSegments(const char *file, vector<string> &ids)
+{
+   int handle = open(file, O_RDONLY);
+   lseek(handle, 0, SEEK_END);
+   auto length = lseek(handle, 0, SEEK_CUR);
+   void *data = mmap(nullptr, length, PROT_READ, MAP_SHARED, handle, 0);
+   auto begin = static_cast<const char *>(data), end = begin + length;
+
+   // save into ordered vector -> indices of matching condition
+   for (auto iter = begin; iter < end;) {
+      auto last = findNthPattern<'|'>(iter, end, 6);
+      iter = last;
+      last = findPattern<'|'>(iter, end);
+      int size = last - iter - 1;
+      string mkt(iter, size);
+      ids.push_back(mkt);
       iter = findPattern<'\n'>(iter, end);
    }
 
@@ -197,7 +220,7 @@ void JoinQuery::getLineMap(const char *file,
 }
 
 //---------------------------------------------------------------------------
-
+/*
 size_t JoinQuery::avg(std::string segmentParam)
 {
    unsigned long long int sum = 0;
@@ -212,6 +235,28 @@ size_t JoinQuery::avg(std::string segmentParam)
          for (auto it = its.first; it != its.second; ++it) {
             sum += it->second;
             count += 1;
+         }
+      }
+   }
+
+   size_t avg = sum * 100 / count;
+   return avg;
+}
+*/
+size_t JoinQuery::avg(std::string segmentParam)
+{
+   unsigned long long int sum = 0;
+   unsigned long long int count = 0;
+
+   for (unsigned i = 0; i < customer_mktSegments.size(); i++) {
+      if (customer_mktSegments[i] == segmentParam) {
+         auto iters = orders_map.equal_range(i + 1);
+         for (auto iter = iters.first; iter != iters.second; ++iter) {
+            auto its = lineitem_map.equal_range(iter->second);
+            for (auto it = its.first; it != its.second; ++it) {
+               sum += it->second;
+               count += 1;
+            }
          }
       }
    }
