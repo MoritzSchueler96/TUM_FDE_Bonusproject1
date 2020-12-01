@@ -10,7 +10,7 @@ class JoinQuery
    public:
    unordered_multimap<unsigned, unsigned> lineitem_map;
    unordered_multimap<unsigned, unsigned> orders_map;
-   // unordered_multimap<string, unsigned> customer_map;
+   unordered_multimap<string, unsigned> customer_map;
    vector<string> customer_mktSegments;
 
    /**************************************************************************
