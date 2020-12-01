@@ -203,8 +203,8 @@ void JoinQuery::getLineMap(const char *file,
 
 size_t JoinQuery::avg(std::string segmentParam)
 {
-   unsigned sum = 0;
-   unsigned count = 0;
+   unsigned long long int sum = 0;
+   unsigned long long int count = 0;
    // for (auto k : this->customer_ids) {
    // if (k.second == segmentParam) {
    auto iterators = customer_map.equal_range(segmentParam);
@@ -220,7 +220,6 @@ size_t JoinQuery::avg(std::string segmentParam)
             count += 1;
          }
       }
-      //}
    }
 
    size_t avg = sum * 100 / count;
