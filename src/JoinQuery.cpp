@@ -20,7 +20,7 @@ using namespace std;
 //---------------------------------------------------------------------------
 JoinQuery::JoinQuery(string lineitem, string orders, string customer)
 {
-   getCustomerIds(&(customer[0]), this->customer_ids);
+   getCustomerIds(&(customer[0]), this->customer_map);
    getOrderMap(&(orders[0]), this->orders_map);
    getLineMap(&(lineitem[0]), this->lineitem_map);
 }
@@ -101,6 +101,7 @@ static const char *findNthPattern(const char *iter, const char *end, unsigned n)
 }
 
 // wrapped code from lecture into its own function
+// maybe use atoi instead?
 void parseInt(const char *first, const char *end, int &v)
 {
    v = 0;
@@ -115,7 +116,8 @@ void parseInt(const char *first, const char *end, int &v)
 }
 
 // content partly taken from the lecture
-void JoinQuery::getCustomerIds(const char *file, vector<string> &ids)
+void JoinQuery::getCustomerIds(const char *file,
+                               unordered_multimap<string, unsigned> &map)
 {
    int handle = open(file, O_RDONLY);
    lseek(handle, 0, SEEK_END);
@@ -134,8 +136,9 @@ void JoinQuery::getCustomerIds(const char *file, vector<string> &ids)
       last = findPattern<'|'>(iter, end);
       int size = last - iter - 1;
       string mkt(iter, size);
-      ids.push_back(mkt);
+      // ids.push_back(mkt);
       // ids[cust_id] = mkt;
+      map.insert({mkt, cust_id});
       iter = findPattern<'\n'>(iter, end);
    }
 
@@ -145,7 +148,7 @@ void JoinQuery::getCustomerIds(const char *file, vector<string> &ids)
 
 // content partly taken from the lecture
 void JoinQuery::getOrderMap(const char *file,
-                            unordered_map<unsigned, unsigned> &map)
+                            unordered_multimap<unsigned, unsigned> &map)
 {
    int handle = open(file, O_RDONLY);
    lseek(handle, 0, SEEK_END);
@@ -161,7 +164,8 @@ void JoinQuery::getOrderMap(const char *file,
       last = findPattern<'|'>(iter, end);
       int v = 0;
       parseInt(iter, last - 1, v);
-      map[order_id] = v;
+      // map[order_id] = v;
+      map.insert({v, order_id});
       iter = findPattern<'\n'>(iter, end);
    }
 
@@ -199,42 +203,24 @@ void JoinQuery::getLineMap(const char *file,
 
 size_t JoinQuery::avg(std::string segmentParam)
 {
-   /*
-      if (index_customer.find(atoi(custkey.c_str())) != index_customer.end()) {
-         unsigned int value = atoi(orderkey.c_str());
-         index_orders.insert(value);
-      }
-   */
-
-   /*
-   TODO: improve this!
-   Ideas: - only iterate over shorter map/set
-          - use vector instead of unordered set -> sorted and
-   std::set_intersection function
-          - use triple loop
-*/
-
    unsigned sum = 0;
    unsigned count = 0;
    // for (auto k : this->customer_ids) {
    // if (k.second == segmentParam) {
-   for (unsigned i = 0; i < customer_ids.size(); i++) {
-      if (customer_ids[i] == segmentParam) {
-         for (auto q : this->orders_map) {
-            // maybe do customer_ids.find instead of for loop
-            // if (q.second == k.first) {
-            if (q.second == i + 1) {
-               // maybe do lineitem_map.find instead of for loop
-               for (auto p : this->lineitem_map) {
-                  if (p.first == q.first) {
-                     sum += p.second;
-                     count += 1;
-                     // break;
-                  }
-               }
-            }
+   auto iterators = customer_map.equal_range(segmentParam);
+   for (auto iterator = iterators.first; iterator != iterators.second;
+        ++iterator) {
+      // for (unsigned i = 0; i < customer_ids.size(); i++) {
+      // if (customer_ids[i] == segmentParam) {
+      auto iters = orders_map.equal_range(iterator->second);
+      for (auto iter = iters.first; iter != iters.second; ++iter) {
+         auto its = lineitem_map.equal_range(iter->second);
+         for (auto it = its.first; it != its.second; ++it) {
+            sum += it->second;
+            count += 1;
          }
       }
+      //}
    }
 
    size_t avg = sum * 100 / count;
