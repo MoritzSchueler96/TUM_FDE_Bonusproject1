@@ -196,25 +196,12 @@ void JoinQuery::getLineMap(const char *file, unordered_multimap<int, int> &map)
 
 size_t JoinQuery::avg(std::string segmentParam)
 {
-   unordered_set<int> matches;
-   // save indices of customer ids in unordered set? or in another ordered
-   // vector? use indices to get orderkeys
-   for (auto q : this->customer_ids) {
-      for (auto p : this->orders_map) {
-         if (p.second == q.first && q.second == segmentParam) {
-            matches.insert(p.first);
-            // break;
-         }
-      }
-   }
-
    /*
       if (index_customer.find(atoi(custkey.c_str())) != index_customer.end()) {
          unsigned int value = atoi(orderkey.c_str());
          index_orders.insert(value);
       }
    */
-   cout << matches.size() << endl;
 
    /*
    TODO: improve this!
@@ -226,12 +213,20 @@ size_t JoinQuery::avg(std::string segmentParam)
 
    unsigned sum = 0;
    unsigned count = 0;
-   for (auto p : this->lineitem_map) {
-      for (auto q : matches) {
-         if (p.first == q) {
-            sum += p.second;
-            count += 1;
-            break;
+   for (auto k : this->customer_ids) {
+      if (k.second == segmentParam) {
+         for (auto q : this->orders_map) {
+            // maybe do customer_ids.find instead of for loop
+            if (q.second == k.first) {
+               // maybe do lineitem_map.find instead of for loop
+               for (auto p : this->lineitem_map) {
+                  if (p.first == q.first) {
+                     sum += p.second;
+                     count += 1;
+                     // break;
+                  }
+               }
+            }
          }
       }
    }
