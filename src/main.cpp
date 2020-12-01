@@ -20,10 +20,10 @@ int main(int argc, char *argv[])
    string customer(argv[3]);
    vector<string> segments;
    // get segments from standard input
-   // for (string segment; getline(cin, segment);) segments.push_back(segment);
-   string segment;
-   getline(cin, segment);
-   segments.push_back(segment);
+   for (string segment; getline(cin, segment);) segments.push_back(segment);
+   // string segment;
+   // getline(cin, segment);
+   // segments.push_back(segment);
    JoinQuery q(lineitem, orders, customer);
    // run a query for each retrieved segment
    for (auto &segment : segments) cout << q.avg(segment) << "\n";

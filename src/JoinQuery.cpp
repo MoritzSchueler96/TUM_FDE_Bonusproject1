@@ -136,8 +136,6 @@ void JoinQuery::getCustomerIds(const char *file,
       last = findPattern<'|'>(iter, end);
       int size = last - iter - 1;
       string mkt(iter, size);
-      // ids.push_back(mkt);
-      // ids[cust_id] = mkt;
       map.insert({mkt, cust_id});
       iter = findPattern<'\n'>(iter, end);
    }
@@ -164,7 +162,6 @@ void JoinQuery::getOrderMap(const char *file,
       last = findPattern<'|'>(iter, end);
       int v = 0;
       parseInt(iter, last - 1, v);
-      // map[order_id] = v;
       map.insert({v, order_id});
       iter = findPattern<'\n'>(iter, end);
    }
@@ -205,13 +202,10 @@ size_t JoinQuery::avg(std::string segmentParam)
 {
    unsigned long long int sum = 0;
    unsigned long long int count = 0;
-   // for (auto k : this->customer_ids) {
-   // if (k.second == segmentParam) {
+
    auto iterators = customer_map.equal_range(segmentParam);
    for (auto iterator = iterators.first; iterator != iterators.second;
         ++iterator) {
-      // for (unsigned i = 0; i < customer_ids.size(); i++) {
-      // if (customer_ids[i] == segmentParam) {
       auto iters = orders_map.equal_range(iterator->second);
       for (auto iter = iters.first; iter != iters.second; ++iter) {
          auto its = lineitem_map.equal_range(iter->second);
