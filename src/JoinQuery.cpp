@@ -254,10 +254,8 @@ size_t JoinQuery::avg2(std::string segmentParam)
 
 size_t JoinQuery::avg(std::string segmentParam)
 {
-   unsigned sum;
-   unsigned count;
-   sum = 0;
-   count = 0;
+   unsigned long long int sum = 0;
+   unsigned long long int count = 0;
 
    for (unsigned i = 0; i < customer_mktSegments.size(); i++) {
       if (customer_mktSegments[i] == segmentParam) {
