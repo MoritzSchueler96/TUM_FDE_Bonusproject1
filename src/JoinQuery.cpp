@@ -269,6 +269,7 @@ size_t JoinQuery::avg(std::string segmentParam)
    }
 
    size_t avg = sum * 100 / count;
+
    return avg;
 }
 
