@@ -230,7 +230,7 @@ void JoinQuery::getLineMap(const char *file,
 
 //---------------------------------------------------------------------------
 // slightly slower variant but not prone to missing customer keys
-size_t JoinQuery::avg2(std::string segmentParam)
+size_t JoinQuery::avg(std::string segmentParam)
 {
    unsigned long long int sum = 0;
    unsigned long long int count = 0;
@@ -252,7 +252,7 @@ size_t JoinQuery::avg2(std::string segmentParam)
    return avg;
 }
 
-size_t JoinQuery::avg(std::string segmentParam)
+size_t JoinQuery::avg2(std::string segmentParam)
 {
    unsigned long long int sum = 0;
    unsigned long long int count = 0;
