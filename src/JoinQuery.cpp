@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <atomic>
 #include <fstream>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -254,15 +255,16 @@ size_t JoinQuery::avg2(std::string segmentParam)
 size_t JoinQuery::avg(std::string segmentParam)
 {
    vector<thread> threads;
-   atomic<unsigned> sum;
-   atomic<unsigned> count;
+   mutex m;
+   unsigned sum;
+   unsigned count;
    sum = 0;
    count = 0;
 
    for (unsigned index = 0, threadCount = thread::hardware_concurrency();
         index != threadCount; ++index) {
       threads.push_back(
-          thread([index, threadCount, this, segmentParam, &sum, &count]() {
+          thread([index, threadCount, this, segmentParam, &sum, &count, &m]() {
              // Executed on a background thread
              for (unsigned i = 0; i < customer_mktSegments.size(); i++) {
                 if (customer_mktSegments[i] == segmentParam) {
@@ -270,8 +272,11 @@ size_t JoinQuery::avg(std::string segmentParam)
                    for (auto iter = iters.first; iter != iters.second; ++iter) {
                       auto its = lineitem_map.equal_range(iter->second);
                       for (auto it = its.first; it != its.second; ++it) {
-                         sum += it->second;
-                         count += 1;
+                         {
+                            unique_lock<mutex> lock(m);
+                            sum += it->second;
+                            count += 1;
+                         }
                       }
                    }
                 }
@@ -281,7 +286,7 @@ size_t JoinQuery::avg(std::string segmentParam)
 
    for (auto &t : threads) t.join();
 
-   size_t avg = sum.load() * 100 / count.load();
+   size_t avg = sum * 100 / count;
    return avg;
 }
 
