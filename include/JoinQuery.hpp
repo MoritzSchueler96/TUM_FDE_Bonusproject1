@@ -57,7 +57,6 @@ class JoinQuery
    /// Returns line count of given file
    size_t lineCount(std::string rel);
    size_t avg2(std::string segmentParam);
-   size_t avg3(std::string segmentParam);
 
    void getCustomerMap(const char *file,
                        unordered_multimap<string, unsigned> &map);
