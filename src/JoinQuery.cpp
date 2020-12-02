@@ -6,9 +6,7 @@
 #include <atomic>
 #include <fstream>
 #include <iostream>
-#include <mutex>
 #include <string>
-#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -252,10 +250,10 @@ size_t JoinQuery::avg2(std::string segmentParam)
    return avg;
 }
 
-size_t JoinQuery::avg3(std::string segmentParam)
+size_t JoinQuery::avg(std::string segmentParam)
 {
-   unsigned long long int sum = 0;
-   unsigned long long int count = 0;
+   unsigned sum = 0;
+   unsigned count = 0;
 
    for (unsigned i = 0; i < customer_mktSegments.size(); i++) {
       if (customer_mktSegments[i] == segmentParam) {
@@ -271,55 +269,6 @@ size_t JoinQuery::avg3(std::string segmentParam)
    }
 
    size_t avg = sum * 100 / count;
-   /*
-   cout << "Sum: " << sum << endl;
-   cout << "Count: " << count << endl;
-   cout << "Avg: " << avg << endl;
-   */
-   return avg;
-}
-
-// assumes cust_key is sorted and has no missing values
-size_t JoinQuery::avg(std::string segmentParam)
-{
-   vector<thread> threads;
-   mutex m;
-   unsigned long long int sum;
-   unsigned long long int count;
-   sum = 0;
-   count = 0;
-
-   for (unsigned index = 0, threadCount = thread::hardware_concurrency();
-        index != threadCount; ++index) {
-      threads.push_back(
-          thread([index, threadCount, this, segmentParam, &sum, &count, &m]() {
-             // Executed on a background thread
-             for (unsigned i = 0; i < customer_mktSegments.size(); i++) {
-                if (customer_mktSegments[i] == segmentParam) {
-                   auto iters = orders_map.equal_range(i + 1);
-                   for (auto iter = iters.first; iter != iters.second; ++iter) {
-                      auto its = lineitem_map.equal_range(iter->second);
-                      for (auto it = its.first; it != its.second; ++it) {
-                         {
-                            unique_lock<mutex> lock(m);
-                            sum += it->second;
-                            count += 1;
-                         }
-                      }
-                   }
-                }
-             }
-          }));
-   }
-
-   for (auto &t : threads) t.join();
-
-   size_t avg = sum * 100 / count;
-   /*
-   cout << "Sum: " << sum << endl;
-   cout << "Count: " << count << endl;
-   cout << "Avg: " << avg << endl;
-   */
    return avg;
 }
 
