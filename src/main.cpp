@@ -21,12 +21,11 @@ int main(int argc, char *argv[])
    vector<string> segments;
    // get segments from standard input
    for (string segment; getline(cin, segment);) segments.push_back(segment);
-   // string segment;
-   // getline(cin, segment);
-   // segments.push_back(segment);
+
    JoinQuery q(lineitem, orders, customer);
    // run a query for each retrieved segment
-   for (auto &segment : segments) cout << q.avg(segment) << "\n";
+   // for (auto &segment : segments) cout << q.avg(segment) << "\n";
+   for (auto &segment : segments) q.avg(segment);
 
    // flush output buffer
    cout.flush();
