@@ -252,10 +252,10 @@ size_t JoinQuery::avg2(std::string segmentParam)
    return avg;
 }
 
-size_t JoinQuery::avg3(std::string segmentParam)
+size_t JoinQuery::avg(std::string segmentParam)
 {
-   unsigned long long int sum;
-   unsigned long long int count;
+   unsigned sum;
+   unsigned count;
    sum = 0;
    count = 0;
 
@@ -280,7 +280,7 @@ size_t JoinQuery::avg3(std::string segmentParam)
 }
 
 // assumes cust_key is sorted and has no missing values
-size_t JoinQuery::avg(std::string segmentParam)
+size_t JoinQuery::avg3(std::string segmentParam)
 {
    vector<thread> threads;
    mutex m;
