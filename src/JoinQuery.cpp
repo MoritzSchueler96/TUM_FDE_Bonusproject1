@@ -17,8 +17,8 @@ using namespace std;
 //---------------------------------------------------------------------------
 JoinQuery::JoinQuery(string lineitem, string orders, string customer)
 {
-   // getCustomerMap(&(customer[0]), this->customer_map);
-   getCustomerMktSegments(&(customer[0]), this->customer_mktSegments);
+   getCustomerMap(&(customer[0]), this->customer_map);
+   // getCustomerMktSegments(&(customer[0]), this->customer_mktSegments);
    getOrderMap(&(orders[0]), this->orders_map);
    getLineMap(&(lineitem[0]), this->lineitem_map);
 }
