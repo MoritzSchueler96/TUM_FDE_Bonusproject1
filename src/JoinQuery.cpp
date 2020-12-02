@@ -3,8 +3,10 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <atomic>
 #include <fstream>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -251,23 +253,34 @@ size_t JoinQuery::avg2(std::string segmentParam)
 // assumes cust_key is sorted and has no missing values
 size_t JoinQuery::avg(std::string segmentParam)
 {
-   unsigned long long int sum = 0;
-   unsigned long long int count = 0;
+   vector<thread> threads;
+   atomic<unsigned> sum;
+   atomic<unsigned> count;
+   sum = 0;
+   count = 0;
 
-   for (unsigned i = 0; i < customer_mktSegments.size(); i++) {
-      if (customer_mktSegments[i] == segmentParam) {
-         auto iters = orders_map.equal_range(i + 1);
-         for (auto iter = iters.first; iter != iters.second; ++iter) {
-            auto its = lineitem_map.equal_range(iter->second);
-            for (auto it = its.first; it != its.second; ++it) {
-               sum += it->second;
-               count += 1;
+   for (unsigned index = 0, threadCount = thread::hardware_concurrency();
+        index != threadCount; ++index) {
+      threads.push_back(thread([index, threadCount, begin, end, &sum]() {
+         // Executed on a background thread
+         for (unsigned i = 0; i < customer_mktSegments.size(); i++) {
+            if (customer_mktSegments[i] == segmentParam) {
+               auto iters = orders_map.equal_range(i + 1);
+               for (auto iter = iters.first; iter != iters.second; ++iter) {
+                  auto its = lineitem_map.equal_range(iter->second);
+                  for (auto it = its.first; it != its.second; ++it) {
+                     sum += it->second;
+                     count += 1;
+                  }
+               }
             }
          }
-      }
+      }));
    }
 
-   size_t avg = sum * 100 / count;
+   for (auto &t : threads) t.join();
+
+   size_t avg = sum.load() * 100 / count.load();
    return avg;
 }
 
