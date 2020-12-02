@@ -261,21 +261,22 @@ size_t JoinQuery::avg(std::string segmentParam)
 
    for (unsigned index = 0, threadCount = thread::hardware_concurrency();
         index != threadCount; ++index) {
-      threads.push_back(thread([index, threadCount, begin, end, &sum]() {
-         // Executed on a background thread
-         for (unsigned i = 0; i < customer_mktSegments.size(); i++) {
-            if (customer_mktSegments[i] == segmentParam) {
-               auto iters = orders_map.equal_range(i + 1);
-               for (auto iter = iters.first; iter != iters.second; ++iter) {
-                  auto its = lineitem_map.equal_range(iter->second);
-                  for (auto it = its.first; it != its.second; ++it) {
-                     sum += it->second;
-                     count += 1;
-                  }
-               }
-            }
-         }
-      }));
+      threads.push_back(
+          thread([index, threadCount, this, segmentParam, &sum, &count]() {
+             // Executed on a background thread
+             for (unsigned i = 0; i < customer_mktSegments.size(); i++) {
+                if (customer_mktSegments[i] == segmentParam) {
+                   auto iters = orders_map.equal_range(i + 1);
+                   for (auto iter = iters.first; iter != iters.second; ++iter) {
+                      auto its = lineitem_map.equal_range(iter->second);
+                      for (auto it = its.first; it != its.second; ++it) {
+                         sum += it->second;
+                         count += 1;
+                      }
+                   }
+                }
+             }
+          }));
    }
 
    for (auto &t : threads) t.join();
