@@ -25,7 +25,6 @@ int main(int argc, char *argv[])
    JoinQuery q(lineitem, orders, customer);
    // run a query for each retrieved segment
    for (auto &segment : segments) cout << q.avg(segment) << "\n";
-   // for (auto &segment : segments) q.avg(segment);
 
    // flush output buffer
    cout.flush();
