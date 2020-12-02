@@ -264,7 +264,7 @@ size_t JoinQuery::avg(std::string segmentParam)
    for (unsigned index = 0, threadCount = thread::hardware_concurrency();
         index != threadCount; ++index) {
       threads.push_back(
-          thread([index, threadCount, this, segmentParam, &sum, &count, &m]() {
+          thread([index, threadCount, this, &segmentParam, &sum, &count, &m]() {
              // Executed on a background thread
              for (unsigned i = 0; i < customer_mktSegments.size(); i++) {
                 if (customer_mktSegments[i] == segmentParam) {
