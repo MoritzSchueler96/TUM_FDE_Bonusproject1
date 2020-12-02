@@ -116,7 +116,10 @@ void JoinQuery::getCustomerMap(const char *file,
    int handle = open(file, O_RDONLY);
    lseek(handle, 0, SEEK_END);
    auto length = lseek(handle, 0, SEEK_CUR);
-   void *data = mmap(nullptr, length, PROT_READ, MAP_SHARED, handle, 0);
+   void *data =
+       mmap(nullptr, length, PROT_READ, MAP_SHARED | MAP_POPULATE, handle, 0);
+   madvise(data, length, MADV_SEQUENTIAL);
+   madvise(data, length, MADV_WILLNEED);
    auto begin = static_cast<const char *>(data), end = begin + length;
 
    for (auto iter = begin; iter < end;) {
@@ -142,7 +145,10 @@ void JoinQuery::getCustomerMktSegments(const char *file, vector<string> &ids)
    int handle = open(file, O_RDONLY);
    lseek(handle, 0, SEEK_END);
    auto length = lseek(handle, 0, SEEK_CUR);
-   void *data = mmap(nullptr, length, PROT_READ, MAP_SHARED, handle, 0);
+   void *data =
+       mmap(nullptr, length, PROT_READ, MAP_SHARED | MAP_POPULATE, handle, 0);
+   madvise(data, length, MADV_SEQUENTIAL);
+   madvise(data, length, MADV_WILLNEED);
    auto begin = static_cast<const char *>(data), end = begin + length;
 
    // save into ordered vector -> indices of matching condition
@@ -167,7 +173,10 @@ void JoinQuery::getOrderMap(const char *file,
    int handle = open(file, O_RDONLY);
    lseek(handle, 0, SEEK_END);
    auto length = lseek(handle, 0, SEEK_CUR);
-   void *data = mmap(nullptr, length, PROT_READ, MAP_SHARED, handle, 0);
+   void *data =
+       mmap(nullptr, length, PROT_READ, MAP_SHARED | MAP_POPULATE, handle, 0);
+   madvise(data, length, MADV_SEQUENTIAL);
+   madvise(data, length, MADV_WILLNEED);
    auto begin = static_cast<const char *>(data), end = begin + length;
 
    for (auto iter = begin; iter < end;) {
@@ -193,7 +202,10 @@ void JoinQuery::getLineMap(const char *file,
    int handle = open(file, O_RDONLY);
    lseek(handle, 0, SEEK_END);
    auto length = lseek(handle, 0, SEEK_CUR);
-   void *data = mmap(nullptr, length, PROT_READ, MAP_SHARED, handle, 0);
+   void *data =
+       mmap(nullptr, length, PROT_READ, MAP_SHARED | MAP_POPULATE, handle, 0);
+   madvise(data, length, MADV_SEQUENTIAL);
+   madvise(data, length, MADV_WILLNEED);
    auto begin = static_cast<const char *>(data), end = begin + length;
 
    for (auto iter = begin; iter < end;) {
