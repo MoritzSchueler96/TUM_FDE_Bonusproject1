@@ -13,8 +13,8 @@ using namespace std;
 //---------------------------------------------------------------------------
 JoinQuery::JoinQuery(string lineitem, string orders, string customer)
 {
-   // getCustomerMap(&(customer[0]), this->customer_map);
-   getCustomerMktSegments(&(customer[0]), this->customer_mktSegments);
+   getCustomerMap(&(customer[0]), this->customer_map);
+   // getCustomerMktSegments(&(customer[0]), this->customer_mktSegments);
    getOrderMap(&(orders[0]), this->orders_map);
    getLineMap(&(lineitem[0]), this->lineitem_map);
 }
@@ -226,7 +226,7 @@ void JoinQuery::getLineMap(const char *file,
 
 //---------------------------------------------------------------------------
 // slightly slower variant but not prone to missing customer keys
-size_t JoinQuery::avg2(std::string segmentParam)
+size_t JoinQuery::avg(std::string segmentParam)
 {
    unsigned long long int sum = 0;
    unsigned long long int count = 0;
@@ -249,7 +249,7 @@ size_t JoinQuery::avg2(std::string segmentParam)
 }
 
 // assumes cust_key is sorted and has no missing values
-size_t JoinQuery::avg(std::string segmentParam)
+size_t JoinQuery::avg2(std::string segmentParam)
 {
    unsigned long long int sum = 0;
    unsigned long long int count = 0;
